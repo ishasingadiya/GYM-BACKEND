@@ -8,9 +8,13 @@ const MONGO_URI = process.env.MONGO_URI;
 
 // MongoDB connection
 mongoose.connect(MONGO_URI)
-  .then(() => console.log('MongoDB connected successfully'))
-  .catch(err => console.log('MongoDB connection failed:', err));
+    .then(() => console.log('MongoDB connected successfully'))
+    .catch(err => console.log('MongoDB connection failed:', err));
+
+const adminUploadRoutes = require('./routes/adminUpload');
+app.use('/api/admin', adminUploadRoutes);
+
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
