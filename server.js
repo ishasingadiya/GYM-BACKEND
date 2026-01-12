@@ -15,6 +15,14 @@ const adminUploadRoutes = require('./routes/adminUpload');
 app.use('/api/admin', adminUploadRoutes);
 
 
+const adminRoutes = require("./routes/adminRoutes");
+
+app.use(express.json());
+app.use("/api/admin", require("./routes/adminRoutes"));
+
+
+
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
