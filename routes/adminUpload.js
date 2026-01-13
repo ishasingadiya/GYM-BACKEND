@@ -1,41 +1,48 @@
 const express = require('express');
 const router = express.Router();
 const upload = require('../middleware/upload');
-const protect = require('../middleware/auth');
-const Admin = require('../models/Admin');
+const cloudinary = require('../config/cloudinary');
+const auth = require('../middleware/auth'); // JWT verification
 
 // Upload multiple documents
 router.post(
-  '/documents',
-  protect,
+  '/upload-docs',
+  auth, // protect route
   upload.fields([
     { name: 'adhar', maxCount: 1 },
     { name: 'pan', maxCount: 1 },
     { name: 'lightBill', maxCount: 1 },
-    { name: 'gumasta', maxCount: 1 }
+    { name: 'gumasta', maxCount: 1 },
   ]),
   async (req, res) => {
     try {
-      const admin = await Admin.findById(req.admin._id);
-
-      if (!admin) {
-        return res.status(404).json({ message: 'Admin not found' });
+      if (!req.files) {
+        return res.status(400).json({ message: 'No files uploaded' });
       }
 
-      admin.documents.adhar = req.files['adhar'][0].location;
-      admin.documents.pan = req.files['pan'][0].location;
-      admin.documents.lightBill = req.files['lightBill'][0].location;
-      admin.documents.gumasta = req.files['gumasta'][0].location;
+      const uploadResults = {};
 
-      await admin.save();
+      for (const key in req.files) {
+        const file = req.files[key][0];
+        const result = await cloudinary.uploader.upload_stream(
+          { resource_type: 'auto', folder: 'gym_docs' },
+          (error, result) => {
+            if (error) throw error;
+            uploadResults[key] = result.secure_url;
+          }
+        );
+
+        // Pipe buffer to upload_stream
+        require('streamifier').createReadStream(file.buffer).pipe(result);
+      }
 
       res.status(200).json({
         message: 'Documents uploaded successfully',
-        documents: admin.documents
+        data: uploadResults,
       });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Upload failed', error: error.message });
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ message: 'Upload failed', error: err.message });
     }
   }
 );
